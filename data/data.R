@@ -14,7 +14,7 @@ save_csv <- function(data, name) {
 
 # Script ======================================================================
 
-readxl::read_excel(
+data <- readxl::read_excel(
   file.path(data_raw_dir, "GMT calculation.xlsx"),
   range = "A1:L59"
 ) %>%
@@ -36,7 +36,17 @@ readxl::read_excel(
   ) %>%
   mutate(
     titre = if_else(titre == "<10", "5", titre),
-    titre = as.integer(titre)
+    titre = as.integer(titre),
+    logtitre = log(titre),
+    timepoint = if_else(str_detect(virus, "BL"), "Baseline", "1 Month"),
+    virus = str_replace(virus, "_[B|1][L|M]$", "")
   ) %>%
   arrange(id) %>%
   save_csv("data")
+
+data %>%
+  select(-titre) %>%
+  pivot_wider(names_from = "timepoint", values_from = "logtitre") %>%
+  mutate(logtitre_diff = `1 Month` - Baseline) %>%
+  select(-Baseline, -`1 Month`) %>%
+  save_csv("data-diff")
